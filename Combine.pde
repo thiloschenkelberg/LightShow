@@ -15,6 +15,8 @@ FFT fft;
 int currentFunction = 0;
 float lastFunctionChangeTime = 0;
 
+float wavy_a;
+
 int[] colors = {color(63, 50, 102), // Purple Heart
                 color(238, 66, 102), // Radical Red
                 color(131, 175, 155), // Eucalyptus
@@ -92,6 +94,23 @@ int pointline_num = 60;
 float pointline_mx[] = new float[pointline_num];
 float pointline_my[] = new float[pointline_num];
 
+float[] starflower_bands;
+int starflower_numBands = 8;
+
+int pollen_nPoints = 4096; // points to draw
+float pollen_complexity = 8; // wind complexity
+float pollen_maxMass = .8; // max pollen mass
+float pollen_timeSpeed = .02; // wind variation speed
+float pollen_phase = TWO_PI; // separate u-noise from v-noise
+
+float pollen_windSpeed = 40; // wind vector magnitude for debug
+int pollen_step = 10; // spatial sampling rate for debug
+
+float[] pollen_pollenMass;
+float[][] pollen_points;
+
+boolean pollen_debugMode = false;
+
 // Set Up
 void setup() {
   //size(400, 400);
@@ -117,6 +136,13 @@ void setup() {
       mods[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
     }
   }
+  pollen_points = new float[pollen_nPoints][2];
+  pollen_pollenMass = new float[pollen_nPoints];
+  for(int i = 0; i < pollen_nPoints; i++) {
+    pollen_points[i] = new float[]{random(0, width), random(0, height)};
+    pollen_pollenMass[i] = random(0, pollen_maxMass);
+  }
+  noiseDetail(14);
 }
 
 void draw() {
@@ -126,7 +152,7 @@ void draw() {
   // Change Function
   if (millis() - lastFunctionChangeTime > 5000) {
     // Increment currentFunction and wrap around to 0 if it exceeds 2
-    currentFunction = (currentFunction + 1) % 11;
+    currentFunction = (currentFunction + 1) % 15;
     // Update the last function change time
     lastFunctionChangeTime = millis();
   }
@@ -173,6 +199,18 @@ void draw() {
       break; 
     case 10: 
       pointline();
+      break; 
+    case 11: 
+      vurp();
+      break; 
+    case 12: 
+      starflower();
+      break; 
+    case 13: 
+      wavy();
+      break; 
+    case 14: 
+      pollen();
       break; 
   }
 }
@@ -499,4 +537,121 @@ void pointline(){
     int index = (which+1 + i) % pointline_num;
     ellipse(pointline_mx[index], pointline_my[index], i, i);
   }
+}
+
+void vurp(){
+  stroke(colors[currentColorIndex+9]);
+  pushMatrix();
+  translate(width/2, height/2);
+  rotate(frameCount * 0.01);
+  for (int x = 10; x < 120; x += 20) {
+    float scaleFactor = map(sin(frameCount * 0.05), -1, 1, 0.5, 1.5); // scale based on sin wave
+    scale(scaleFactor);
+    line(125, x, x+130, 125);
+    line(125, x+130, x, 125);
+    line(125, 120-x, x, 125);
+    line(125, 250-x, x+130, 125);
+  }
+  popMatrix();
+}
+
+void starflower(){
+  fft.forward(in.mix);
+  fft.logAverages(22, starflower_numBands);
+  noStroke();
+  // move the origin to the center of the screen
+  translate(width/3, height/3);
+  
+  starflower_bands = new float[starflower_numBands];
+  for (int i = 0; i < starflower_numBands; i++) {
+    float band = fft.getBand(i);
+    starflower_bands[i] = lerp(starflower_bands[i], band, 0.2);
+  }
+
+  for (int x = 880; x > 0; x -= 10) {
+    rect(0, 0, x, x);
+    float hue = map(starflower_bands[(int) map(x, 0, 880, 0, starflower_numBands - 1)], 0, 1, 0, 255);
+    fill(hue, 25, 70, 50);
+    rotate(PI / 6);
+  }
+}
+
+void wavy(){
+  colorMode(RGB, 6);
+  wavy_a -= 0.08;
+  for (int x = -7; x < 7; x++) {
+   for (int z = -7; z < 7; z++) {
+    int y = int(24 * cos(0.55 * distance(x,z,0,0) + wavy_a));
+    
+    float xm = x*17 -8.5;
+    float xt = x*17 +8.5;
+    float zm = z*17 -8.5;
+    float zt = z*17 +8.5;
+    
+    /* We use an integer to define the width and height of the window. This is used to save resources on further calculating */
+    int halfw = (int)width/2;
+    int halfh = (int)height/2;
+    
+    int isox1 = int(xm - zm + halfw);
+    int isoy1 = int((xm + zm) * 0.5 + halfh);
+    int isox2 = int(xm - zt + halfw);
+    int isoy2 = int((xm + zt) * 0.5 + halfh);
+    int isox3 = int(xt - zt + halfw);
+    int isoy3 = int((xt + zt) * 0.5 + halfh);
+    int isox4 = int(xt - zm + halfw);
+    int isoy4 = int((xt + zm) * 0.5 + halfh);
+    
+    /* The side quads. 2 and 4 is used for the coloring of each of these quads */
+    fill (colors[currentColorIndex+2]);
+    quad(isox2, isoy2-y, isox3, isoy3-y, isox3, isoy3+40, isox2, isoy2+40);
+    fill (colors[currentColorIndex+9]);
+    quad(isox3, isoy3-y, isox4, isoy4-y, isox4, isoy4+40, isox3, isoy3+40);
+
+    fill(colors[currentColorIndex+6] + y * 0.05);
+    quad(isox1, isoy1-y, isox2, isoy2-y, isox3, isoy3-y, isox4, isoy4-y);
+   }
+  }
+}
+/* The distance formula */
+float distance(float x,float y,float cx,float cy) {
+  return sqrt(sq(cx - x) + sq(cy - y));
+}
+
+void pollen(){
+  float t = frameCount * pollen_timeSpeed;
+ 
+  stroke(colors[currentColorIndex+6]);
+  
+  for(int i = 0; i < pollen_nPoints; i++) {
+    float x = pollen_points[i][0];
+    float y = pollen_points[i][1];
+    
+    float normx = norm(x, 0, width);
+    float normy = norm(y, 0, height);
+    float u = noise(t + pollen_phase, normx * pollen_complexity + pollen_phase, normy * pollen_complexity + pollen_phase);
+    float v = noise(t - pollen_phase, normx * pollen_complexity - pollen_phase, normy * pollen_complexity + pollen_phase);
+    float speed = (1 + noise(t, u, v)) / pollen_pollenMass[i];
+    x += lerp(-speed, speed, u);
+    y += lerp(-speed, speed, v);
+    
+    if(x < 0 || x > width || y < 0 || y > height) {
+      x = random(0, width);
+      y = random(0, height);
+    }
+    
+
+    point(x, y);
+      
+    pollen_points[i][0] = x;
+    pollen_points[i][1] = y;
+  }
+}
+
+void mousePressed() {
+  setup();
+}
+
+void keyPressed() {
+  pollen_debugMode = !pollen_debugMode;
+  background(255);
 }
