@@ -769,13 +769,15 @@ void mousePressed() {
 }
 
 void keyReleased() {
-  switch (key) {
-    case 'LEFT':
+  if (key == CODED) {
+    if (keyCode == LEFT) {
       currentEffect--;
-      break;
-    case 'RIGHT':
+    } else if (keyCode == RIGHT) {
       currentEffect++;
-      break;
+    }
+  }
+  
+  switch (key) {
     case 'd':
       pollen_debugMode = !pollen_debugMode;
       if (background == 0) {
