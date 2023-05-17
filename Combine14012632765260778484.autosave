@@ -22,7 +22,6 @@ FFT fft;
 // Effect
 static int currentEffect = 0;
 static float lastEffectChangeTime = 0;
-static final int effectDuration = 10000;
 
 // Color
 final color[] colors = {color(63, 50, 102), // Purple Heart
@@ -54,7 +53,7 @@ final color[] colors = {color(63, 50, 102), // Purple Heart
 
 static int currentColorIndex = 0;
 static int nextColorIndex = 1;
-static final float colorTransitionDuration = 2.0;
+static final float colorTransitionDuration = 5.0;
 static float colorTransitionStartTime = 0;
 
 // Moving Points
@@ -112,14 +111,12 @@ static float pointline_my[] = new float[pointline_num];
 static float[] starflower_bands;
 static final int starflower_numBands = 8;
 
-// Face Tunnels
+// Crazy
 static final int radius = 35;
 static final int numSegments = 8; // number of segments in the circle outline
 static final float segmentAngle = 360.0 / numSegments; // angle of each segment
 static float xPos, yPos;
 static float angle = 0;
-static float drawFaceDelay = 500;
-static float lastSeenFaceTime = -500;
 
 
 // Set Up
@@ -128,8 +125,6 @@ void setup() {
  
   size(960, 540);
   //fullScreen();
-  
-  scale(2);
 
   // setup sound and video input
   setupSound();
@@ -138,11 +133,9 @@ void setup() {
   // setup for some effects
   setupModules();
   setupPollen();
+  basic_circle_setup();
 
   noiseDetail(14);
-
-  currentEffect = int(random(0,14));
-  currentEffect = 0;
 }
 
 void draw() {
@@ -150,16 +143,16 @@ void draw() {
   background(0); // 0 = black
 
   // Change Effect
-  if (millis() - lastEffectChangeTime > effectDuration) {
+  if (millis() - lastEffectChangeTime > 5000) {
     // Increment currentEffect and wrap around to 0 if it exceeds 2
-    currentEffect = (currentEffect + 1) % 15;
+    currentEffect = (currentEffect + 1) % 16;
     effectSetup(currentEffect);
     // Update the last effect change time
     lastEffectChangeTime = millis();
   }
   
   // Change Color
-  float currentTime = millis() / 1000.0;
+  float currentTime = millis() / 3000.0;
   if (currentTime - colorTransitionStartTime >= colorTransitionDuration) {
     colorTransitionStartTime = currentTime;
     currentColorIndex = nextColorIndex;
@@ -212,6 +205,9 @@ void draw() {
       break; 
     case 14: 
       drawPollen();
+      break; 
+    case 15:
+      crazy();
       break;
     default:
       break;
@@ -230,82 +226,21 @@ void effectSetup(int effect) {
     case 7:
       center_setup();
       break;
-    case 10:
-      break;
-    case 12:
-      colorMode(RGB, 255);
-      break;
-    case 14:
-      colorMode(RGB, 255);
-      break;
     default:
       break;
   }
 }
 
-// Setup for Basic Circles
-void basic_circle_setup() {
-    // set the initial positions to the center of the screen
-    for (int i = 0; i < 3; i++) {
-    radii[i] = height / 8.0;
-    angles[i] = i * TWO_PI / 3.0;
-    xPositions[i] = width / 2;
-    yPositions[i] = height / 2;
-  }
-}
-
-// Setup for Circle Trio
-void circle_trio_setup() {
-  // set the initial positions
-  for (int i = 0; i < 2; i++) {
-    xPositions[i] = width / 2.0;
-    yPositions[i] = height / 2.0;
-    radii[i] = height / 4.0;
-    angles[i] = i * TWO_PI / 3.0;
-  }
-}
-
-// Setup for Center
-void center_setup() {
-  for (int i = 0; i < 1; i++) {
-    xPositions[i] = width / 2.0 + i * width / 2.0;
-    yPositions[i] = height / 2.0;
-    radii[i] = height / 10.0;
-  }
-}
-
-// Setup for Moving Points
-void setupModules() {
-  int mp_columns = width / moving_points_unit;
-  int mp_rows = height / moving_points_unit;
-  moving_points_count = mp_columns * mp_rows;
-  modules = new Module[moving_points_count];
-  
-  println("test");
-
-  int index = 0;
-  for (int y = 0; y < mp_rows; y++) {
-    for (int x = 0; x < mp_columns; x++) {
-      modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
-    }
-  }
-}
-
-// Setup for Pollen
-void setupPollen() {
-  pollen = new Pollen(height, width);
-}
-
 ///////////// Effects /////////////
 
-void drawFaceTunnels(){
+void crazy(){
   opencv.loadImage(video);
   Rectangle[] faces = opencv.detect();
   
   //image(video, 0, 0);
+  scale(2);
   noFill();
   strokeWeight(1);
-  scale(2);
   
   for (int i = 0; i < faces.length; i++) {
     xPos = faces[i].x + (faces[i].width / 2);
@@ -327,11 +262,29 @@ void drawFaceTunnels(){
   }
   
   angle = (angle + 0.25) % 360;
+  
+  strokeWeight(8);
+  // get the current audio level from the microphone
+  float[] audioData = in.mix.toArray();
+  float rms = 0;
+  for (int i = 0; i < audioData.length; i++) {
+    rms += audioData[i] * audioData[i];
+  }
+  rms /= audioData.length;
+  rms = sqrt(rms);
+  float micLevel = map(rms, 0, 0.5, 0, 10);
+
+  // map the audio level to the position of the lines
+  lines_X = map(micLevel, 0, 10, 0, width);
+  lines_Y = map(micLevel, 0, 10, 0, height);
+
+  // draw the lines
+  stroke(colors[currentColorIndex]);
+  line(lines_X, 0, lines_X, height);
+  line(0, lines_Y, width, lines_Y);
 }
 
 void lines(){
-  drawFaceTunnels();
-  
   strokeWeight(8);
   // get the current audio level from the microphone
   float[] audioData = in.mix.toArray();
@@ -430,7 +383,6 @@ void spiral_linepoint(){
 }
 
 void rotating_line(){
-  drawFaceTunnels();
   strokeWeight(2);
   translate(width/2, height/2);
   
@@ -454,7 +406,6 @@ void rotating_line(){
 }
 
 void basic_circles(){
-  strokeWeight(2);
   // draw each circle in a separate color
   for (int i = 0; i < 3; i++) {
     stroke(colors[(currentColorIndex+i) % colors.length]);
@@ -495,7 +446,6 @@ void basic_circles(){
 }
 
 void bezier_lines(){
-  strokeWeight(2);
   stroke(colors[(currentColorIndex+4) % colors.length]);
   noFill();
   float micLevel = in.mix.level(); // get the current audio level of the microphone input
@@ -518,8 +468,6 @@ void bezier_lines(){
 }
 
 void circle_trio(){
-  strokeWeight(2);
-  //circle_trio_setup();
   fft.forward(in.mix);
   stroke(colors[(currentColorIndex+10) % colors.length]);
   noFill();
@@ -553,7 +501,7 @@ void circle_trio(){
 }
 
 void center(){
-  strokeWeight(2);
+
   // draw each circle in a separate color
   for (int i = 0; i < 1; i++) {
     stroke(colors[(currentColorIndex+i) % colors.length]);
@@ -584,7 +532,6 @@ void center(){
 }
 
 void moving_points(){
-  noStroke();
   for (Module mod : modules) {
     mod.update();
     mod.display();
@@ -592,7 +539,6 @@ void moving_points(){
 }
 
 void moving_spiral(){
-  noStroke();
   fill(colors[currentColorIndex]);
   // analyze the audio input
   fft.forward(in.mix);
@@ -617,7 +563,7 @@ void moving_spiral(){
     float angle = radians(grad);
     float x = 700 + cos(angle) * radius;
     float y = 400 + sin(angle) * radius;
-    ellipse(x, y, 7, 7);
+    ellipse(x, y, 15, 15);
     radius += 2;
   }
 }
@@ -637,7 +583,6 @@ void pointline(){
 }
 
 void vurp(){
-  strokeWeight(2);
   stroke(colors[(currentColorIndex+9) % colors.length]);
   pushMatrix();
   translate(width/2, height/2);
@@ -654,10 +599,9 @@ void vurp(){
 }
 
 void starflower(){
-  noStroke();
   fft.forward(in.mix);
   fft.logAverages(22, starflower_numBands);
-
+  noStroke();
   // move the origin to the center of the screen
   translate(width/3, height/3);
   
@@ -670,15 +614,12 @@ void starflower(){
   for (int x = 880; x > 0; x -= 10) {
     rect(0, 0, x, x);
     float hue = map(starflower_bands[(int) map(x, 0, 880, 0, starflower_numBands - 1)], 0, 1, 0, 255);
-    println(hue);
     fill(hue, 25, 70, 50);
     rotate(PI / 6);
   }
 }
 
 void wavy(){
-  strokeWeight(1);
-  stroke(colors[(currentColorIndex+6) % colors.length]);
   colorMode(RGB, 6);
   wavy_a -= 0.08;
   for (int x = -7; x < 7; x++) {
@@ -720,7 +661,6 @@ float distance(float x,float y,float cx,float cy) {
 }
 
 void drawPollen(){
-  strokeWeight(2);
   stroke(colors[(currentColorIndex+6) % colors.length]);
 
   float t = frameCount * pollen.timeSpeed;
@@ -748,7 +688,60 @@ void drawPollen(){
   }
 }
 
-/////////// Setup ////////////
+
+
+// Setup for Moving Points
+void setupModules() {
+  int mp_columns = width / moving_points_unit;
+  int mp_rows = height / moving_points_unit;
+  moving_points_count = mp_columns * mp_rows;
+  modules = new Module[moving_points_count];
+  
+  println("test");
+
+  int index = 0;
+  for (int y = 0; y < mp_rows; y++) {
+    for (int x = 0; x < mp_columns; x++) {
+      modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
+    }
+  }
+}
+
+// Setup for Pollen
+void setupPollen() {
+  pollen = new Pollen(height, width);
+}
+
+// Setup for Basic Circles
+void basic_circle_setup() {
+    // set the initial positions to the center of the screen
+    for (int i = 0; i < 3; i++) {
+    radii[i] = height / 8.0;
+    angles[i] = i * TWO_PI / 3.0;
+    xPositions[i] = width / 2;
+    yPositions[i] = height / 2;
+  }
+}
+
+// Setup for Circle Trio
+void circle_trio_setup() {
+  // set the initial positions
+  for (int i = 0; i < 2; i++) {
+    xPositions[i] = width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 4.0;
+    angles[i] = i * TWO_PI / 3.0;
+  }
+}
+
+// Setup for Center
+void center_setup() {
+  for (int i = 0; i < 1; i++) {
+    xPositions[i] = width / 2.0 + i * width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 10.0;
+  }
+}
 
 void setupSound() {
   // create a new Minim object
@@ -767,45 +760,13 @@ void setupVideo() {
   video.start();
 }
 
-////// IO //////
-
 void mousePressed() {
   setup();
 }
 
-void keyReleased() {
-  if (key == CODED) {
-    if (keyCode == LEFT) {
-      if (currentEffect > 0) {
-        currentEffect--;
-      } else {
-        currentEffect = 14;
-      }
-      effectSetup(currentEffect);
-      lastEffectChangeTime = millis();
-    } else if (keyCode == RIGHT) {
-      currentEffect = (currentEffect + 1) % 15;
-      effectSetup(currentEffect);
-      lastEffectChangeTime = millis();
-    }
-  }
-  
-  switch (key) {
-    case 'd':
-      pollen_debugMode = !pollen_debugMode;
-      if (pollen_debugMode) {
-        background(255);
-      } else {
-        background(0);
-      }
-      break;
-    case '0':
-      background(0);
-      break;
-    default:
-      break;
-  }
-
+void keyPressed() {
+  pollen_debugMode = !pollen_debugMode;
+  background(255);
 }
 
 void captureEvent(Capture c) {
