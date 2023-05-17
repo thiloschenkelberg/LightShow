@@ -19,7 +19,7 @@ FFT fft;
 
 // Set variables
 
-static color[] colors = {color(63, 50, 102), // Purple Heart
+color[] colors = {color(63, 50, 102), // Purple Heart
                       color(238, 66, 102), // Radical Red
                       color(131, 175, 155), // Eucalyptus
                       color(247, 190, 136), // Dark Salmon
