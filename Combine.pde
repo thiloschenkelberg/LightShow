@@ -20,7 +20,7 @@ FFT fft;
 //// Set variables
 
 // Effect
-static int currentEffect = random(0, 15);
+static int currentEffect = 0;
 static float lastEffectChangeTime = 0;
 
 // Color
@@ -136,6 +136,8 @@ void setup() {
   basic_circle_setup();
 
   noiseDetail(14);
+
+  currentEffect = random(0,15);
 }
 
 void draw() {
