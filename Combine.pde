@@ -17,9 +17,14 @@ Minim minim;
 AudioInput in;
 FFT fft;
 
-// Set variables
+//// Set variables
 
-color[] colors = {color(63, 50, 102), // Purple Heart
+// Effect
+static int currentEffect = 0;
+static float lastEffectChangeTime = 0;
+
+// Color
+final color[] colors = {color(63, 50, 102), // Purple Heart
                       color(238, 66, 102), // Radical Red
                       color(131, 175, 155), // Eucalyptus
                       color(247, 190, 136), // Dark Salmon
@@ -46,13 +51,9 @@ color[] colors = {color(63, 50, 102), // Purple Heart
                       color(91, 192, 222) // Maya Blue
 };
 
-// 
-static int currentEffect = 0;
-static float lastEffectChangeTime = 0;
-
 static int currentColorIndex = 0;
 static int nextColorIndex = 1;
-static float colorTransitionDuration = 5.0;
+static final float colorTransitionDuration = 5.0;
 static float colorTransitionStartTime = 0;
 
 // Moving Points
@@ -84,49 +85,39 @@ static float spiral_linepoint_maxRadius;
 static float rotating_line_theta = 0;
 static float rotating_line_hue = 0;
 
-float[] basic_circles_xPositions = new float[3];
-float[] basic_circles_yPositions = new float[3];
-float[] basic_circles_radii = new float[3];
-float[] basic_circles_angles = new float[3];
-float basic_circles_angleStep = 0.5;
+// Basic Circle / Circle Trio / Center
+static float[] xPositions = new float[3];
+static float[] yPositions = new float[3];
+static float[] radii = new float[3];
+static float[] angles = new float[3];
+static float[] center_angles = {0, TWO_PI/3, 2*TWO_PI/3};
+static final float basic_circles_angleStep = 0.5;
+static final float circle_trio_angleStep = 0.05;
+static final float center_angleStep = 0.5;
+static final float center_circleSpeed = 50;
 
-float[] circle_trio_xPositions = new float[3];
-float[] circle_trio_yPositions = new float[3];
-float[] circle_trio_radii = new float[3];
-float[] circle_trio_angles = new float[3];
-float circle_trio_angleStep = 0.05;
-
-float[] center_xPositions = new float[3];
-float[] center_yPositions = new float[3];
-float[] center_radii = new float[3];
-float[] center_angles = {0, TWO_PI/3, 2*TWO_PI/3};
-float center_angleStep = 0.5;
-float center_circleSpeed = 50;
+// Moving Spiral
+static final int moving_spiral_bands = 256;
+static final float moving_spiral_multiplier = 0.1;
+static float[] moving_spiral_spectrum = new float[moving_spiral_bands];
 
 
+// Pointline
+static final int pointline_num = 60;
+static float pointline_mx[] = new float[pointline_num];
+static float pointline_my[] = new float[pointline_num];
 
-int moving_spiral_bands = 256;
-float[] moving_spiral_spectrum = new float[moving_spiral_bands];
-float moving_spiral_multiplier = 0.1;
+// Starflower
+static float[] starflower_bands;
+static final int starflower_numBands = 8;
 
-int pointline_num = 60;
-float pointline_mx[] = new float[pointline_num];
-float pointline_my[] = new float[pointline_num];
+// Crazy
+static final int radius = 35;
+static final int numSegments = 8; // number of segments in the circle outline
+static final float segmentAngle = 360.0 / numSegments; // angle of each segment
+static float xPos, yPos;
+static float angle = 0;
 
-float[] starflower_bands;
-int starflower_numBands = 8;
-
-
-
-
-
-
-
-float xPos, yPos;
-float radius = 35;
-float angle = 0;
-int numSegments = 8; // number of segments in the circle outline
-float segmentAngle = 360.0 / numSegments; // angle of each segment
 
 // Set Up
 void setup() {
@@ -154,7 +145,8 @@ void draw() {
   // Change Effect
   if (millis() - lastEffectChangeTime > 5000) {
     // Increment currentEffect and wrap around to 0 if it exceeds 2
-    currentEffect = (currentEffect + 1) % 15;
+    currentEffect = (currentEffect + 1) % 16;
+    effectSetup(currentEffect);
     // Update the last effect change time
     lastEffectChangeTime = millis();
   }
@@ -217,16 +209,29 @@ void draw() {
     case 15:
       crazy();
       break;
+    default:
+      break;
   }
 }
 
+////////// Effects Setup //////////
+void effectSetup(int effect) {
+  switch(effect) {
+    case 4:
+      basic_circle_setup();
+      break;
+    case 6:
+      circle_trio_setup();
+      break;
+    case 7:
+      center_setup();
+      break;
+    default:
+      break;
+  }
+}
 
-
-
-
-///////////// Different Functions /////////
-
-
+///////////// Effects /////////////
 
 void crazy(){
   opencv.loadImage(video);
@@ -414,9 +419,9 @@ void basic_circles(){
       if (angle > TWO_PI) {
         angle = 0;
       }
-      float x = basic_circles_xPositions[i] + basic_circles_radii[i] * cos(basic_circles_angles[i] + angle);
-      float y = basic_circles_yPositions[i] + basic_circles_radii[i] * sin(basic_circles_angles[i] + angle);
-      float amp = map(abs(wave[j]), 0, 1, 0, basic_circles_radii[i]);
+      float x = xPositions[i] + radii[i] * cos(angles[i] + angle);
+      float y = yPositions[i] + radii[i] * sin(angles[i] + angle);
+      float amp = map(abs(wave[j]), 0, 1, 0, radii[i]);
       ellipse(x, y, amp, amp);
     }
     endShape();
@@ -425,17 +430,17 @@ void basic_circles(){
   // update circle positions
   for (int i = 0; i < 3; i++) {
     float speed = map(abs(fft.getBand(i+1)), 0, 1, 0, 1);
-    basic_circles_xPositions[i] += speed * cos(basic_circles_angles[i]);
-    basic_circles_yPositions[i] += speed * sin(basic_circles_angles[i]);
-    if (basic_circles_xPositions[i] < 0 - basic_circles_radii[i] || basic_circles_xPositions[i] > width + basic_circles_radii[i]) {
-      basic_circles_xPositions[i] = random(width);
+    xPositions[i] += speed * cos(angles[i]);
+    yPositions[i] += speed * sin(angles[i]);
+    if (xPositions[i] < 0 - radii[i] || xPositions[i] > width + radii[i]) {
+      xPositions[i] = random(width);
     }
-    if (basic_circles_yPositions[i] < 0 - basic_circles_radii[i] || basic_circles_yPositions[i] > height + basic_circles_radii[i]) {
-      basic_circles_yPositions[i] = random(height);
+    if (yPositions[i] < 0 - radii[i] || yPositions[i] > height + radii[i]) {
+      yPositions[i] = random(height);
     }
-    basic_circles_angles[i] += basic_circles_angleStep;
-    if (basic_circles_angles[i] > TWO_PI) {
-      basic_circles_angles[i] = 0;
+    angles[i] += basic_circles_angleStep;
+    if (angles[i] > TWO_PI) {
+      angles[i] = 0;
     }
   }
 }
@@ -476,9 +481,9 @@ void circle_trio(){
       angle = 0;
     }
     for (int j = 0; j < 2; j++) {
-      float x = circle_trio_xPositions[j] + circle_trio_radii[j] * cos(circle_trio_angles[j] + angle);
-      float y = circle_trio_yPositions[j] + circle_trio_radii[j] * sin(circle_trio_angles[j] + angle);
-      float yMapped = map(wave[i], -1, 1, 0, circle_trio_radii[j]);
+      float x = xPositions[j] + radii[j] * cos(angles[j] + angle);
+      float y = yPositions[j] + radii[j] * sin(angles[j] + angle);
+      float yMapped = map(wave[i], -1, 1, 0, radii[j]);
       vertex(x, y + yMapped);
     }
   }
@@ -486,21 +491,17 @@ void circle_trio(){
   
   // update circle positions
   for (int i = 0; i < 2; i++) {
-    circle_trio_xPositions[i] += 2 * cos(circle_trio_angles[i]);
-    circle_trio_yPositions[i] += 2 * sin(circle_trio_angles[i]);
-    circle_trio_angles[i] += circle_trio_angleStep;
-    if (circle_trio_angles[i] > TWO_PI) {
-      circle_trio_angles[i] = 0;
+    xPositions[i] += 2 * cos(angles[i]);
+    yPositions[i] += 2 * sin(angles[i]);
+    angles[i] += circle_trio_angleStep;
+    if (angles[i] > TWO_PI) {
+      angles[i] = 0;
     }
   }
 }
 
 void center(){
-  for (int i = 0; i < 1; i++) {
-    center_xPositions[i] = width / 2.0 + i * width / 2.0;
-    center_yPositions[i] = height / 2.0;
-    center_radii[i] = height / 10.0;
-  }
+
   // draw each circle in a separate color
   for (int i = 0; i < 1; i++) {
     stroke(colors[(currentColorIndex+i) % colors.length]);
@@ -509,9 +510,9 @@ void center(){
     float angle = 0;
     for (int j = 0; j < 60; j++) {
       angle += center_angleStep;
-      float x = center_xPositions[i] + center_radii[i] * cos(center_angles[i] + angle);
-      float y = center_yPositions[i] + center_radii[i] * sin(center_angles[i] + angle);
-      float amp = map(j, 0, 30, 0, center_radii[i]);
+      float x = xPositions[i] + radii[i] * cos(center_angles[i] + angle);
+      float y = yPositions[i] + radii[i] * sin(center_angles[i] + angle);
+      float amp = map(j, 0, 30, 0, radii[i]);
       ellipse(x, y, amp, amp);
     }
     endShape();
@@ -525,8 +526,8 @@ void center(){
     }
     float circleX = width / 2.0 + (width / 3.0) * cos(center_angles[i]);
     float circleY = height / 2.0 + (height / 3.0) * sin(center_angles[i]);
-    center_xPositions[i] = circleX + center_radii[i] * cos(center_angles[i]);
-    center_yPositions[i] = circleY + center_radii[i] * sin(center_angles[i]);
+    xPositions[i] = circleX + radii[i] * cos(center_angles[i]);
+    yPositions[i] = circleY + radii[i] * sin(center_angles[i]);
   }
 }
 
@@ -687,6 +688,8 @@ void drawPollen(){
   }
 }
 
+
+
 // Setup for Moving Points
 void setupModules() {
   int mp_columns = width / moving_points_unit;
@@ -713,10 +716,10 @@ void setupPollen() {
 void basic_circle_setup() {
     // set the initial positions to the center of the screen
     for (int i = 0; i < 3; i++) {
-    basic_circles_radii[i] = height / 8.0;
-    basic_circles_angles[i] = i * TWO_PI / 3.0;
-    basic_circles_xPositions[i] = width / 2;
-    basic_circles_yPositions[i] = height / 2;
+    radii[i] = height / 8.0;
+    angles[i] = i * TWO_PI / 3.0;
+    xPositions[i] = width / 2;
+    yPositions[i] = height / 2;
   }
 }
 
@@ -724,10 +727,19 @@ void basic_circle_setup() {
 void circle_trio_setup() {
   // set the initial positions
   for (int i = 0; i < 2; i++) {
-    circle_trio_xPositions[i] = width / 2.0;
-    circle_trio_yPositions[i] = height / 2.0;
-    circle_trio_radii[i] = height / 4.0;
-    circle_trio_angles[i] = i * TWO_PI / 3.0;
+    xPositions[i] = width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 4.0;
+    angles[i] = i * TWO_PI / 3.0;
+  }
+}
+
+// Setup for Center
+void center_setup() {
+  for (int i = 0; i < 1; i++) {
+    xPositions[i] = width / 2.0 + i * width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 10.0;
   }
 }
 
