@@ -137,7 +137,7 @@ void setup() {
 
   noiseDetail(14);
 
-  currentEffect = random(0,15);
+  currentEffect = int(random(0,15));
 }
 
 void draw() {
