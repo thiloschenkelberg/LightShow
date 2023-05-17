@@ -141,7 +141,7 @@ void setup() {
 
   // setup for some effects
   setupModules();
-  setupPollen();
+  //setupPollen();
 
   noiseDetail(14);
 }
@@ -167,7 +167,7 @@ void draw() {
   }
   
   // Switch Modes
-  switch(currentEffect) {
+  switch(0) {
     case 0:
       lines();
       break;
@@ -546,7 +546,7 @@ void center(){
 }
 
 void moving_points(){
-  for (Module mod : mods) {
+  for (Module mod : modules) {
     mod.update();
     mod.display();
   }

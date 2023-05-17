@@ -1,6 +1,6 @@
 class Pollen {
-  static float[][] points;
-  static float[] mass;
+  float[][] points;
+  float[] mass;
 
   static final int count = 4096; // points to draw
   static final int complexity = 8; // wind complexity
