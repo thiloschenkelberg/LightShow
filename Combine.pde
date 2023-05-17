@@ -5,6 +5,12 @@ import ddf.minim.effects.*;
 import ddf.minim.signals.*;
 import ddf.minim.spi.*;
 import ddf.minim.ugens.*;
+import gab.opencv.*;
+import processing.video.*;
+import java.awt.*;
+
+Capture video;
+OpenCV opencv;
 
 // load packages
 Minim minim;
@@ -111,10 +117,26 @@ float[][] pollen_points;
 
 boolean pollen_debugMode = false;
 
+float xPos, yPos;
+float radius = 35;
+float angle = 0;
+float saturation = 100; // saturation of the color
+float brightness = 100; // brightness of the color
+int numSegments = 8; // number of segments in the circle outline
+float segmentAngle = 360.0 / numSegments; // angle of each segment
+
 // Set Up
 void setup() {
-  //size(400, 400);
-  fullScreen();
+  smooth();
+  video = new Capture(this, 480, 270);
+  opencv = new OpenCV(this, 480, 270);
+  opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);
+  
+  video.start();
+ 
+
+  size(960, 540);
+  //fullScreen();
 
   // create a new Minim object
   minim = new Minim(this);
@@ -166,7 +188,7 @@ void draw() {
   }
   
   // Switch Modes
-  switch(currentFunction) {
+  switch(15) {
     case 0:
       lines();
       break;
@@ -212,6 +234,9 @@ void draw() {
     case 14: 
       pollen();
       break; 
+    case 15:
+      crazy();
+      break;
   }
 }
 
@@ -220,6 +245,60 @@ void draw() {
 
 
 ///////////// Different Functions /////////
+
+
+
+void crazy(){
+  opencv.loadImage(video);
+  Rectangle[] faces = opencv.detect();
+  
+  //image(video, 0, 0);
+  scale(2);
+  noFill();
+  strokeWeight(1);
+  
+  for (int i = 0; i < faces.length; i++) {
+    xPos = faces[i].x + (faces[i].width / 2);
+    yPos = faces[i].y + (faces[i].height / 2);
+    for (int j = 0; j < numSegments; j++) {
+      float startAngle = j * segmentAngle + angle;
+      float endAngle = (j + 1) * segmentAngle + angle;
+      
+      stroke(colors[1]);
+      if (j % 2 == 0) {
+        stroke(colors[17]);
+      }
+
+      arc(xPos,yPos, radius*2, radius*2, radians(startAngle), radians(endAngle));
+
+    }
+    //rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height);
+  }
+  
+  println(xPos);
+  
+  angle = (angle + 0.25) % 360;
+  
+  strokeWeight(8);
+  // get the current audio level from the microphone
+  float[] audioData = in.mix.toArray();
+  float rms = 0;
+  for (int i = 0; i < audioData.length; i++) {
+    rms += audioData[i] * audioData[i];
+  }
+  rms /= audioData.length;
+  rms = sqrt(rms);
+  float micLevel = map(rms, 0, 0.5, 0, 10);
+
+  // map the audio level to the position of the lines
+  lines_X = map(micLevel, 0, 10, 0, width);
+  lines_Y = map(micLevel, 0, 10, 0, height);
+
+  // draw the lines
+  stroke(colors[currentColorIndex]);
+  line(lines_X, 0, lines_X, height);
+  line(0, lines_Y, width, lines_Y);
+}
 
 void lines(){
   strokeWeight(8);
@@ -654,4 +733,8 @@ void mousePressed() {
 void keyPressed() {
   pollen_debugMode = !pollen_debugMode;
   background(255);
+}
+
+void captureEvent(Capture c) {
+  c.read();
 }
