@@ -780,7 +780,7 @@ void keyReleased() {
   switch (key) {
     case 'd':
       pollen_debugMode = !pollen_debugMode;
-      if (background == 0) {
+      if (pollen_debugMode) {
         background(255);
       } else {
         background(0);
