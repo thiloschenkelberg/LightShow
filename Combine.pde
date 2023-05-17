@@ -9,65 +9,80 @@ import gab.opencv.*;
 import processing.video.*;
 import java.awt.*;
 
+// load packages
 Capture video;
 OpenCV opencv;
 
-// load packages
 Minim minim;
 AudioInput in;
 FFT fft;
 
 // Set variables
-int currentFunction = 0;
-float lastFunctionChangeTime = 0;
 
-float wavy_a;
-
-int[] colors = {color(63, 50, 102), // Purple Heart
-                color(238, 66, 102), // Radical Red
-                color(131, 175, 155), // Eucalyptus
-                color(247, 190, 136), // Dark Salmon
-                color(174, 207, 158), // Granny Smith Apple
-                color(255, 121, 85), // Orange Red
-                color(89, 71, 140), // Eminence
-                color(208, 144, 173), // Mauvelous
-                color(177, 219, 231), // Powder Blue
-                color(255, 175, 123), // Peach
-                color(78, 205, 196), // Aquamarine
-                color(231, 111, 81), // Tomato
-                color(244, 162, 97), // Sandy Brown
-                color(255, 219, 171), // Lemon Chiffon
-                color(176, 196, 222), // Blue Bell
-                color(102, 102, 153), // Blue Violet
-                color(215, 159, 130), // Pink Sherbet
-                color(255, 213, 79), // Lemon Yellow
-                color(165, 105, 189), // Amethyst
-                color(244, 178, 156), // Light Apricot
-                color(69, 123, 157), // Steel Blue
-                color(255, 174, 153), // Light Coral
-                color(145, 71, 255), // Royal Purple
-                color(245, 215, 110), // Dandelion
-                color(91, 192, 222) // Maya Blue
+static int[] colors = {color(63, 50, 102), // Purple Heart
+                      color(238, 66, 102), // Radical Red
+                      color(131, 175, 155), // Eucalyptus
+                      color(247, 190, 136), // Dark Salmon
+                      color(174, 207, 158), // Granny Smith Apple
+                      color(255, 121, 85), // Orange Red
+                      color(89, 71, 140), // Eminence
+                      color(208, 144, 173), // Mauvelous
+                      color(177, 219, 231), // Powder Blue
+                      color(255, 175, 123), // Peach
+                      color(78, 205, 196), // Aquamarine
+                      color(231, 111, 81), // Tomato
+                      color(244, 162, 97), // Sandy Brown
+                      color(255, 219, 171), // Lemon Chiffon
+                      color(176, 196, 222), // Blue Bell
+                      color(102, 102, 153), // Blue Violet
+                      color(215, 159, 130), // Pink Sherbet
+                      color(255, 213, 79), // Lemon Yellow
+                      color(165, 105, 189), // Amethyst
+                      color(244, 178, 156), // Light Apricot
+                      color(69, 123, 157), // Steel Blue
+                      color(255, 174, 153), // Light Coral
+                      color(145, 71, 255), // Royal Purple
+                      color(245, 215, 110), // Dandelion
+                      color(91, 192, 222) // Maya Blue
 };
 
-int currentColorIndex = 0;
-int nextColorIndex = 1;
-float colorTransitionDuration = 5.0;
-float colorTransitionStartTime = 0;
+// 
+static int currentEffect = 0;
+static float lastEffectChangeTime = 0;
 
-float lines_X = 0;
-float lines_Y = 0;
+static int currentColorIndex = 0;
+static int nextColorIndex = 1;
+static float colorTransitionDuration = 5.0;
+static float colorTransitionStartTime = 0;
 
-float[] spiral_linepoint_angles = {0, 0, 0, 0};
-float spiral_linepoint_angleSpeed = 0.1;
-float[] spiral_linepoint_radii = {150, 150, 150, 150};
-float spiral_linepoint_radiusSpeed = 0.1;
-float[] spiral_linepoint_sizes = {10, 10, 10, 10};
-float spiral_linepoint_sizeMultiplier = 200;
-float spiral_linepoint_maxRadius;
+// Moving Points
+static Module[] modules;
+static final int moving_points_unit = 40;
+static int moving_points_count;
 
-float rotating_line_theta = 0;
-float rotating_line_hue = 0;
+// Pollen
+static Pollen pollen;
+static boolean pollen_debugMode = false;
+
+// Wavy
+static float wavy_a = 0;
+
+// Lines
+static float lines_X = 0;
+static float lines_Y = 0;
+
+// Spiral Linepoint
+static float[] spiral_linepoint_angles = {0, 0, 0, 0};
+static float spiral_linepoint_angleSpeed = 0.1;
+static float[] spiral_linepoint_radii = {150, 150, 150, 150};
+static float spiral_linepoint_radiusSpeed = 0.1;
+static float[] spiral_linepoint_sizes = {10, 10, 10, 10};
+static float spiral_linepoint_sizeMultiplier = 200;
+static float spiral_linepoint_maxRadius;
+
+// Rotating Line
+static float rotating_line_theta = 0;
+static float rotating_line_hue = 0;
 
 float[] basic_circles_xPositions = new float[3];
 float[] basic_circles_yPositions = new float[3];
@@ -88,9 +103,7 @@ float[] center_angles = {0, TWO_PI/3, 2*TWO_PI/3};
 float center_angleStep = 0.5;
 float center_circleSpeed = 50;
 
-int moving_points_unit = 40;
-int moving_points_count;
-Module[] mods;
+
 
 int moving_spiral_bands = 256;
 float[] moving_spiral_spectrum = new float[moving_spiral_bands];
@@ -103,67 +116,33 @@ float pointline_my[] = new float[pointline_num];
 float[] starflower_bands;
 int starflower_numBands = 8;
 
-int pollen_nPoints = 4096; // points to draw
-float pollen_complexity = 8; // wind complexity
-float pollen_maxMass = .8; // max pollen mass
-float pollen_timeSpeed = .02; // wind variation speed
-float pollen_phase = TWO_PI; // separate u-noise from v-noise
 
-float pollen_windSpeed = 40; // wind vector magnitude for debug
-int pollen_step = 10; // spatial sampling rate for debug
 
-float[] pollen_pollenMass;
-float[][] pollen_points;
 
-boolean pollen_debugMode = false;
+
+
 
 float xPos, yPos;
 float radius = 35;
 float angle = 0;
-float saturation = 100; // saturation of the color
-float brightness = 100; // brightness of the color
 int numSegments = 8; // number of segments in the circle outline
 float segmentAngle = 360.0 / numSegments; // angle of each segment
 
 // Set Up
 void setup() {
   smooth();
-  video = new Capture(this, 480, 270);
-  opencv = new OpenCV(this, 480, 270);
-  opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);
-  
-  video.start();
  
-
   size(960, 540);
   //fullScreen();
 
-  // create a new Minim object
-  minim = new Minim(this);
+  // setup sound and video input
+  setupSound();
+  setupVideo();
 
-  // get the default audio input device
-  in = minim.getLineIn(Minim.MONO, 512);
-  fft = new FFT(in.bufferSize(), in.sampleRate());
-  fft.logAverages(60, 7);
-  
-  stroke(colors[currentColorIndex+3]);
-  int wideCount = width / moving_points_unit;
-  int highCount = height / moving_points_unit;
-  moving_points_count = wideCount * highCount;
-  mods = new Module[moving_points_count];
+  // setup for some effects
+  setupModules();
+  setupPollen();
 
-  int index = 0;
-  for (int y = 0; y < highCount; y++) {
-    for (int x = 0; x < wideCount; x++) {
-      mods[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
-    }
-  }
-  pollen_points = new float[pollen_nPoints][2];
-  pollen_pollenMass = new float[pollen_nPoints];
-  for(int i = 0; i < pollen_nPoints; i++) {
-    pollen_points[i] = new float[]{random(0, width), random(0, height)};
-    pollen_pollenMass[i] = random(0, pollen_maxMass);
-  }
   noiseDetail(14);
 }
 
@@ -171,12 +150,12 @@ void draw() {
   // set backgorund to black
   background(0); // 0 = black
 
-  // Change Function
-  if (millis() - lastFunctionChangeTime > 5000) {
-    // Increment currentFunction and wrap around to 0 if it exceeds 2
-    currentFunction = (currentFunction + 1) % 15;
-    // Update the last function change time
-    lastFunctionChangeTime = millis();
+  // Change Effect
+  if (millis() - lastEffectChangeTime > 5000) {
+    // Increment currentEffect and wrap around to 0 if it exceeds 2
+    currentEffect = (currentEffect + 1) % 15;
+    // Update the last effect change time
+    lastEffectChangeTime = millis();
   }
   
   // Change Color
@@ -188,7 +167,7 @@ void draw() {
   }
   
   // Switch Modes
-  switch(15) {
+  switch(currentEffect) {
     case 0:
       lines();
       break;
@@ -232,7 +211,7 @@ void draw() {
       wavy();
       break; 
     case 14: 
-      pollen();
+      drawPollen();
       break; 
     case 15:
       crazy();
@@ -268,14 +247,13 @@ void crazy(){
       if (j % 2 == 0) {
         stroke(colors[17]);
       }
-
+      // draw circle (in arcs) around face
       arc(xPos,yPos, radius*2, radius*2, radians(startAngle), radians(endAngle));
 
     }
+    //draw rectangle around face
     //rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height);
   }
-  
-  println(xPos);
   
   angle = (angle + 0.25) % 360;
   
@@ -334,7 +312,7 @@ void opposing_rectangles(){
   fill(colors[currentColorIndex]);
   rect(width/2 + r1/2, height/2, r1, r1);
 
-  fill(colors[currentColorIndex+1]);
+  fill(colors[(currentColorIndex+1)%colors.length]);
   rect(width/2 - r2/2, height/2, r2, r2);
 }
 
@@ -354,7 +332,7 @@ void spiral_linepoint(){
   
   // Draw the spiral
   noFill();
-  stroke(colors[currentColorIndex]+5);
+  stroke(colors[(currentColorIndex+5) % colors.length]);
   strokeWeight(2);
   beginShape();
   for (int i = 0; i < spiral_linepoint_angles.length; i++) {
@@ -433,7 +411,7 @@ void basic_circles(){
 
   // draw each circle in a separate color
   for (int i = 0; i < 3; i++) {
-    stroke(colors[currentColorIndex+i]);
+    stroke(colors[(currentColorIndex+i) % colors.length]);
     noFill();
     beginShape();
     float[] wave = in.mix.toArray();
@@ -471,7 +449,7 @@ void basic_circles(){
 }
 
 void bezier_lines(){
-  stroke(colors[currentColorIndex+4]);
+  stroke(colors[(currentColorIndex+4) % colors.length]);
   noFill();
   float micLevel = in.mix.level(); // get the current audio level of the microphone input
   float x = map(micLevel, 0, 1, 0, width); // map the mic level to the x-coordinate of the processing body
@@ -501,7 +479,7 @@ void circle_trio(){
     circle_trio_angles[i] = i * TWO_PI / 3.0;
   }
   fft.forward(in.mix);
-  stroke(colors[currentColorIndex+10]);
+  stroke(colors[(currentColorIndex+10) % colors.length]);
   noFill();
   float[] wave = in.mix.toArray();
   int waveSize = wave.length;
@@ -540,7 +518,7 @@ void center(){
   }
   // draw each circle in a separate color
   for (int i = 0; i < 1; i++) {
-    stroke(colors[currentColorIndex+i]);
+    stroke(colors[(currentColorIndex+i) % colors.length]);
     noFill();
     beginShape();
     float angle = 0;
@@ -606,7 +584,7 @@ void moving_spiral(){
 
 void pointline(){
   noStroke();
-  fill(colors[currentColorIndex+11]); 
+  fill(colors[(currentColorIndex+11) % colors.length]); 
   
   int which = frameCount % pointline_num;
   pointline_mx[which] = map(in.left.get(0), -1, 1, 0, width);
@@ -619,7 +597,7 @@ void pointline(){
 }
 
 void vurp(){
-  stroke(colors[currentColorIndex+9]);
+  stroke(colors[(currentColorIndex+9) % colors.length]);
   pushMatrix();
   translate(width/2, height/2);
   rotate(frameCount * 0.01);
@@ -681,12 +659,12 @@ void wavy(){
     int isoy4 = int((xt + zm) * 0.5 + halfh);
     
     /* The side quads. 2 and 4 is used for the coloring of each of these quads */
-    fill (colors[currentColorIndex+2]);
+    fill (colors[(currentColorIndex+2) % colors.length]);
     quad(isox2, isoy2-y, isox3, isoy3-y, isox3, isoy3+40, isox2, isoy2+40);
-    fill (colors[currentColorIndex+9]);
+    fill (colors[(currentColorIndex+9) % colors.length]);
     quad(isox3, isoy3-y, isox4, isoy4-y, isox4, isoy4+40, isox3, isoy3+40);
 
-    fill(colors[currentColorIndex+6] + y * 0.05);
+    fill(colors[(currentColorIndex+6) % colors.length] + y * 0.05);
     quad(isox1, isoy1-y, isox2, isoy2-y, isox3, isoy3-y, isox4, isoy4-y);
    }
   }
@@ -696,20 +674,19 @@ float distance(float x,float y,float cx,float cy) {
   return sqrt(sq(cx - x) + sq(cy - y));
 }
 
-void pollen(){
-  float t = frameCount * pollen_timeSpeed;
- 
-  stroke(colors[currentColorIndex+6]);
-  
-  for(int i = 0; i < pollen_nPoints; i++) {
-    float x = pollen_points[i][0];
-    float y = pollen_points[i][1];
-    
+void drawPollen(){
+  stroke(colors[(currentColorIndex+6) % colors.length]);
+
+  float t = frameCount * pollen.timeSpeed;
+
+  for(int i = 0; i < pollen.count; i++) {
+    float x = pollen.points[i][0];
+    float y = pollen.points[i][1];
     float normx = norm(x, 0, width);
     float normy = norm(y, 0, height);
-    float u = noise(t + pollen_phase, normx * pollen_complexity + pollen_phase, normy * pollen_complexity + pollen_phase);
-    float v = noise(t - pollen_phase, normx * pollen_complexity - pollen_phase, normy * pollen_complexity + pollen_phase);
-    float speed = (1 + noise(t, u, v)) / pollen_pollenMass[i];
+    float u = noise(t + pollen.phase, normx * pollen.complexity + pollen.phase, normy * pollen.complexity + pollen.phase);
+    float v = noise(t - pollen.phase, normx * pollen.complexity - pollen.phase, normy * pollen.complexity + pollen.phase);
+    float speed = (1 + noise(t, u, v)) / pollen.mass[i];
     x += lerp(-speed, speed, u);
     y += lerp(-speed, speed, v);
     
@@ -717,13 +694,46 @@ void pollen(){
       x = random(0, width);
       y = random(0, height);
     }
-    
 
+    pollen.points[i][0] = x;
+    pollen.points[i][1] = y;
+    
     point(x, y);
-      
-    pollen_points[i][0] = x;
-    pollen_points[i][1] = y;
   }
+}
+
+void setupModules() {
+  int mp_columns = width / moving_points_unit;
+  int mp_rows = height / moving_points_unit;
+  moving_points_count = mp_columns * mp_rows;
+
+  int index = 0;
+  for (int y = 0; y < highCount; y++) {
+    for (int x = 0; x < wideCount; x++) {
+      modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
+    }
+  }
+}
+
+void setupPollen() {
+  pollen = new Pollen(height, width);
+}
+
+void setupSound() {
+  // create a new Minim object
+  minim = new Minim(this);
+
+  // get the default audio input device
+  in = minim.getLineIn(Minim.MONO, 512);
+  fft = new FFT(in.bufferSize(), in.sampleRate());
+  fft.logAverages(60, 7);
+}
+
+void setupVideo() {
+  video = new Capture(this, 480, 270);
+  opencv = new OpenCV(this, 480, 270);
+  opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);
+  video.start();
 }
 
 void mousePressed() {
