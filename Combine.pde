@@ -20,7 +20,7 @@ FFT fft;
 //// Set variables
 
 // Effect
-static int currentEffect = 0;
+static int currentEffect = random(0, 15);
 static float lastEffectChangeTime = 0;
 
 // Color
@@ -160,7 +160,7 @@ void draw() {
   }
   
   // Switch Modes
-  switch(4) {
+  switch(currentEffect) {
     case 0:
       lines();
       break;
