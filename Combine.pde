@@ -19,7 +19,7 @@ FFT fft;
 
 // Set variables
 
-static int[] colors = {color(63, 50, 102), // Purple Heart
+static color[] colors = {color(63, 50, 102), // Purple Heart
                       color(238, 66, 102), // Radical Red
                       color(131, 175, 155), // Eucalyptus
                       color(247, 190, 136), // Dark Salmon
@@ -708,8 +708,8 @@ void setupModules() {
   moving_points_count = mp_columns * mp_rows;
 
   int index = 0;
-  for (int y = 0; y < highCount; y++) {
-    for (int x = 0; x < wideCount; x++) {
+  for (int y = 0; y < mp_rows; y++) {
+    for (int x = 0; x < mp_columns; x++) {
       modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
     }
   }
