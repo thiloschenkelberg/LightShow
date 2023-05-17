@@ -233,6 +233,59 @@ void effectSetup(int effect) {
   }
 }
 
+// Setup for Circle Trio
+void circle_trio_setup() {
+  // set the initial positions
+  for (int i = 0; i < 2; i++) {
+    xPositions[i] = width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 4.0;
+    angles[i] = i * TWO_PI / 3.0;
+  }
+}
+
+// Setup for Center
+void center_setup() {
+  for (int i = 0; i < 1; i++) {
+    xPositions[i] = width / 2.0 + i * width / 2.0;
+    yPositions[i] = height / 2.0;
+    radii[i] = height / 10.0;
+  }
+}
+
+// Setup for Moving Points
+void setupModules() {
+  int mp_columns = width / moving_points_unit;
+  int mp_rows = height / moving_points_unit;
+  moving_points_count = mp_columns * mp_rows;
+  modules = new Module[moving_points_count];
+  
+  println("test");
+
+  int index = 0;
+  for (int y = 0; y < mp_rows; y++) {
+    for (int x = 0; x < mp_columns; x++) {
+      modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
+    }
+  }
+}
+
+// Setup for Pollen
+void setupPollen() {
+  pollen = new Pollen(height, width);
+}
+
+// Setup for Basic Circles
+void basic_circle_setup() {
+    // set the initial positions to the center of the screen
+    for (int i = 0; i < 3; i++) {
+    radii[i] = height / 8.0;
+    angles[i] = i * TWO_PI / 3.0;
+    xPositions[i] = width / 2;
+    yPositions[i] = height / 2;
+  }
+}
+
 ///////////// Effects /////////////
 
 void crazy(){
@@ -690,60 +743,7 @@ void drawPollen(){
   }
 }
 
-
-
-// Setup for Moving Points
-void setupModules() {
-  int mp_columns = width / moving_points_unit;
-  int mp_rows = height / moving_points_unit;
-  moving_points_count = mp_columns * mp_rows;
-  modules = new Module[moving_points_count];
-  
-  println("test");
-
-  int index = 0;
-  for (int y = 0; y < mp_rows; y++) {
-    for (int x = 0; x < mp_columns; x++) {
-      modules[index++] = new Module(x*moving_points_unit, y*moving_points_unit, moving_points_unit/2, moving_points_unit/2, random(0.05, 0.8), moving_points_unit);
-    }
-  }
-}
-
-// Setup for Pollen
-void setupPollen() {
-  pollen = new Pollen(height, width);
-}
-
-// Setup for Basic Circles
-void basic_circle_setup() {
-    // set the initial positions to the center of the screen
-    for (int i = 0; i < 3; i++) {
-    radii[i] = height / 8.0;
-    angles[i] = i * TWO_PI / 3.0;
-    xPositions[i] = width / 2;
-    yPositions[i] = height / 2;
-  }
-}
-
-// Setup for Circle Trio
-void circle_trio_setup() {
-  // set the initial positions
-  for (int i = 0; i < 2; i++) {
-    xPositions[i] = width / 2.0;
-    yPositions[i] = height / 2.0;
-    radii[i] = height / 4.0;
-    angles[i] = i * TWO_PI / 3.0;
-  }
-}
-
-// Setup for Center
-void center_setup() {
-  for (int i = 0; i < 1; i++) {
-    xPositions[i] = width / 2.0 + i * width / 2.0;
-    yPositions[i] = height / 2.0;
-    radii[i] = height / 10.0;
-  }
-}
+/////////// Setup ////////////
 
 void setupSound() {
   // create a new Minim object
@@ -762,13 +762,30 @@ void setupVideo() {
   video.start();
 }
 
+////// IO //////
+
 void mousePressed() {
   setup();
 }
 
-void keyPressed() {
-  pollen_debugMode = !pollen_debugMode;
-  background(255);
+void keyReleased() {
+  switch (key) {
+    case 'LEFT':
+      currentEffect--;
+      break;
+    case 'RIGHT':
+      currentEffect++;
+      break;
+    case 'd':
+      pollen_debugMode = !pollen_debugMode;
+      if (background == 0) {
+        background(255);
+      } else {
+        background(0);
+      }
+      break;
+  }
+
 }
 
 void captureEvent(Capture c) {
