@@ -142,6 +142,7 @@ void setup() {
   // setup for some effects
   setupModules();
   setupPollen();
+  basic_circle_setup();
 
   noiseDetail(14);
 }
@@ -167,7 +168,7 @@ void draw() {
   }
   
   // Switch Modes
-  switch(0) {
+  switch(4) {
     case 0:
       lines();
       break;
@@ -400,15 +401,6 @@ void rotating_line(){
 }
 
 void basic_circles(){
-
-  // set the initial positions to the center of the screen
-  for (int i = 0; i < 3; i++) {
-    basic_circles_radii[i] = height / 8.0;
-    basic_circles_angles[i] = i * TWO_PI / 3.0;
-    basic_circles_xPositions[i] = width / 2;
-    basic_circles_yPositions[i] = height / 2;
-  }
-
   // draw each circle in a separate color
   for (int i = 0; i < 3; i++) {
     stroke(colors[(currentColorIndex+i) % colors.length]);
@@ -471,13 +463,6 @@ void bezier_lines(){
 }
 
 void circle_trio(){
-
-  for (int i = 0; i < 2; i++) {
-    circle_trio_xPositions[i] = width / 2.0;
-    circle_trio_yPositions[i] = height / 2.0;
-    circle_trio_radii[i] = height / 4.0;
-    circle_trio_angles[i] = i * TWO_PI / 3.0;
-  }
   fft.forward(in.mix);
   stroke(colors[(currentColorIndex+10) % colors.length]);
   noFill();
@@ -702,6 +687,7 @@ void drawPollen(){
   }
 }
 
+// Setup for Moving Points
 void setupModules() {
   int mp_columns = width / moving_points_unit;
   int mp_rows = height / moving_points_unit;
@@ -718,8 +704,31 @@ void setupModules() {
   }
 }
 
+// Setup for Pollen
 void setupPollen() {
   pollen = new Pollen(height, width);
+}
+
+// Setup for Basic Circles
+void basic_circle_setup() {
+    // set the initial positions to the center of the screen
+    for (int i = 0; i < 3; i++) {
+    basic_circles_radii[i] = height / 8.0;
+    basic_circles_angles[i] = i * TWO_PI / 3.0;
+    basic_circles_xPositions[i] = width / 2;
+    basic_circles_yPositions[i] = height / 2;
+  }
+}
+
+// Setup for Circle Trio
+void circle_trio_setup() {
+  // set the initial positions
+  for (int i = 0; i < 2; i++) {
+    circle_trio_xPositions[i] = width / 2.0;
+    circle_trio_yPositions[i] = height / 2.0;
+    circle_trio_radii[i] = height / 4.0;
+    circle_trio_angles[i] = i * TWO_PI / 3.0;
+  }
 }
 
 void setupSound() {
