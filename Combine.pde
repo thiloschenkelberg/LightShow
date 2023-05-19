@@ -128,8 +128,6 @@ void setup() {
  
   size(960, 540);
   //fullScreen();
-  
-  scale(2);
 
   // setup sound and video input
   setupSound();
@@ -327,6 +325,7 @@ void drawFaceTunnels(){
   }
   
   angle = (angle + 0.25) % 360;
+  scale(0.5);
 }
 
 void lines(){
@@ -515,6 +514,7 @@ void bezier_lines(){
     bezier(x-(i/8.0), 200+i, width-410, 100, width-100, 100, width-240+(i/16.0), 600+(i/2.0));
   }
   popMatrix(); // restore the previous transformation state
+  scale(-1,1);
 }
 
 void circle_trio(){
@@ -592,6 +592,7 @@ void moving_points(){
 }
 
 void moving_spiral(){
+  drawFaceTunnels();
   noStroke();
   fill(colors[currentColorIndex]);
   // analyze the audio input
