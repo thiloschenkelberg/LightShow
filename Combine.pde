@@ -278,8 +278,6 @@ void setupModules() {
   int mp_rows = height / moving_points_unit;
   moving_points_count = mp_columns * mp_rows;
   modules = new Module[moving_points_count];
-  
-  println("test");
 
   int index = 0;
   for (int y = 0; y < mp_rows; y++) {
