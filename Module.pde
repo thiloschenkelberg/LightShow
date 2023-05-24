@@ -7,7 +7,7 @@ class Module {
   int yDirection = 1;
   float speed; 
   
-  // Contructor
+  // Constructor
   Module(int xOffsetTemp, int yOffsetTemp, int xTemp, int yTemp, float speedTemp, int tempUnit) {
     xOffset = xOffsetTemp;
     yOffset = yOffsetTemp;

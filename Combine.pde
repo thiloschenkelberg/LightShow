@@ -8,6 +8,7 @@ import ddf.minim.ugens.*;
 import gab.opencv.*;
 import processing.video.*;
 import java.awt.*;
+import java.util.Iterator;
 
 // load packages
 Capture video;
@@ -20,6 +21,8 @@ FFT fft;
 //// Set variables
 
 // Effect
+static boolean draw_faceTunnels = false;
+
 static int currentEffect = 0;
 static float lastEffectChangeTime = 0;
 static final int effectDuration = 10000;
@@ -112,22 +115,16 @@ static float pointline_my[] = new float[pointline_num];
 static float[] starflower_bands;
 static final int starflower_numBands = 8;
 
-// Face Tunnels
-static final int radius = 35;
-static final int numSegments = 8; // number of segments in the circle outline
-static final float segmentAngle = 360.0 / numSegments; // angle of each segment
-static float xPos, yPos;
-static float angle = 0;
-static float drawFaceDelay = 500;
-static float lastSeenFaceTime = -500;
+// FaceTunnels
+ArrayList<Face> faces;
 
 
 // Set Up
 void setup() {
   smooth();
  
-  size(960, 540);
-  //fullScreen();
+  //size(960, 540);
+  fullScreen();
 
   // setup sound and video input
   setupSound();
@@ -141,6 +138,8 @@ void setup() {
 
   currentEffect = int(random(0,14));
   currentEffect = 0;
+
+  faces = new ArrayList<Face>();
 }
 
 void draw() {
@@ -148,20 +147,23 @@ void draw() {
   background(0); // 0 = black
 
   // Change Effect
-  if (millis() - lastEffectChangeTime > effectDuration) {
-    // Increment currentEffect and wrap around to 0 if it exceeds 2
-    currentEffect = (currentEffect + 1) % 15;
-    effectSetup(currentEffect);
-    // Update the last effect change time
-    lastEffectChangeTime = millis();
-  }
+  // if (millis() - lastEffectChangeTime > effectDuration) {
+  //   // Increment currentEffect and wrap around to 0 if it exceeds 2
+  //   currentEffect = (currentEffect + 1) % 15;
+  //   effectSetup(currentEffect);
+  //   // Update the last effect change time
+  //   lastEffectChangeTime = millis();
+  // }
   
   // Change Color
-  float currentTime = millis() / 1000.0;
-  if (currentTime - colorTransitionStartTime >= colorTransitionDuration) {
-    colorTransitionStartTime = currentTime;
+  if ((millis() / 1000.0) - colorTransitionStartTime >= colorTransitionDuration) {
+    colorTransitionStartTime = millis() / 1000.0;
     currentColorIndex = nextColorIndex;
     nextColorIndex = (nextColorIndex + 1) % colors.length;
+  }
+
+  if (draw_faceTunnels) {
+    drawFaceTunnels();
   }
   
   // Switch Modes
@@ -295,39 +297,58 @@ void setupPollen() {
 ///////////// Effects /////////////
 
 void drawFaceTunnels(){
-  opencv.loadImage(video);
-  Rectangle[] faces = opencv.detect();
+  scale(4);
   
-  //image(video, 0, 0);
+  opencv.loadImage(video);
+  Rectangle[] newFaces = opencv.detect();
+
+  for (Rectangle newFace : newFaces) {
+    PVector newFacePos = new PVector(1 * (newFace.x + (newFace.width / 2)),
+                                     1 * (newFace.y + (newFace.height / 2)));
+    float newFaceRadius = 0.75 * newFace.height;
+    boolean faceMatch = false;
+
+    for (Face face : faces) {
+      if (face.match(newFacePos)) {
+        face.update(newFacePos, newFaceRadius);
+        faceMatch = true;
+      }
+    }
+
+    if (!faceMatch) {
+      faces.add(0, new Face(newFacePos, newFaceRadius));
+    }
+  }
+
   noFill();
   strokeWeight(1);
-  scale(2);
-  
-  for (int i = 0; i < faces.length; i++) {
-    xPos = faces[i].x + (faces[i].width / 2);
-    yPos = faces[i].y + (faces[i].height / 2);
-    for (int j = 0; j < numSegments; j++) {
-      float startAngle = j * segmentAngle + angle;
-      float endAngle = (j + 1) * segmentAngle + angle;
-      
-      stroke(colors[1]);
-      if (j % 2 == 0) {
-        stroke(colors[17]);
-      }
-      // draw circle (in arcs) around face
-      arc(xPos,yPos, radius*2, radius*2, radians(startAngle), radians(endAngle));
 
+  /// Show webcam footage ///
+  //image(video, 0, 0);
+
+  Iterator<Face> faceIt = faces.iterator();
+  while(faceIt.hasNext()) {
+    Face face = faceIt.next();
+    if (face.inactive()) {
+      faceIt.remove();
+    } else {
+      boolean overlap = false;
+      for (Face otherFace : faces) {
+        if (face != otherFace && face.match(otherFace.getPosition(), 2)) {
+          overlap = true;
+        }
+      }
+      if (overlap) {
+        faceIt.remove();
+      }
+      face.draw();
     }
-    //draw rectangle around face
-    //rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height);
   }
-  
-  angle = (angle + 0.25) % 360;
-  scale(0.5);
+
+  scale(0.25);
 }
 
 void lines(){
-  drawFaceTunnels();
   
   strokeWeight(8);
   // get the current audio level from the microphone
@@ -427,7 +448,6 @@ void spiral_linepoint(){
 }
 
 void rotating_line(){
-  drawFaceTunnels();
   strokeWeight(2);
   translate(width/2, height/2);
   
@@ -590,7 +610,6 @@ void moving_points(){
 }
 
 void moving_spiral(){
-  drawFaceTunnels();
   noStroke();
   fill(colors[currentColorIndex]);
   // analyze the audio input
@@ -797,6 +816,12 @@ void keyReleased() {
       } else {
         background(0);
       }
+      break;
+    case 'w':
+      draw_faceTunnels = true;
+      break;
+    case 'l':
+      draw_faceTunnels = false;
       break;
     case '0':
       background(0);
