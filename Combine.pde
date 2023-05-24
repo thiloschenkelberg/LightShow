@@ -136,6 +136,7 @@ void setup() {
 
   noiseDetail(14);
 
+  // set start effect
   currentEffect = int(random(0,14));
   currentEffect = 0;
 
@@ -143,17 +144,17 @@ void setup() {
 }
 
 void draw() {
-  // set backgorund to black
+  // set background to black
   background(0); // 0 = black
 
   // Change Effect
-  // if (millis() - lastEffectChangeTime > effectDuration) {
-  //   // Increment currentEffect and wrap around to 0 if it exceeds 2
-  //   currentEffect = (currentEffect + 1) % 15;
-  //   effectSetup(currentEffect);
-  //   // Update the last effect change time
-  //   lastEffectChangeTime = millis();
-  // }
+  if (millis() - lastEffectChangeTime > effectDuration) {
+    // Increment currentEffect and wrap around to 0 if it exceeds 2
+    currentEffect = (currentEffect + 1) % 15;
+    effectSetup(currentEffect);
+    // Update the last effect change time
+    lastEffectChangeTime = millis();
+  }
   
   // Change Color
   if ((millis() / 1000.0) - colorTransitionStartTime >= colorTransitionDuration) {
@@ -298,7 +299,7 @@ void setupPollen() {
 
 void drawFaceTunnels(){
   scale(4);
-  
+
   opencv.loadImage(video);
   Rectangle[] newFaces = opencv.detect();
 
